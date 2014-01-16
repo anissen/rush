@@ -60,7 +60,6 @@ BasicGame.Game.prototype = {
       var hospital = this.hospitals.create(this.world.centerX, this.world.centerY, 'hospital');
       hospital.anchor.setTo(0.5, 0.5);
       hospital.inputEnabled = true;
-      hospital.events.onInputDown.add(this.toHospital, this);
     }
 
     this.patients = this.add.group();
@@ -68,7 +67,6 @@ BasicGame.Game.prototype = {
       var patient = this.patients.create(this.snapX(this.world.randomX), this.snapY(this.world.randomY), 'patient');
       patient.anchor.setTo(0.5, 0.5);
       patient.inputEnabled = true;
-      patient.events.onInputDown.add(this.carDispatched, this);
 
       patient.countDown = this.rnd.realInRange(this.maxTimeOut / 5, this.maxTimeOut);
       patient.countTween = this.add.tween(patient);
@@ -122,9 +120,9 @@ BasicGame.Game.prototype = {
         ctx.lineWidth = 4;
         ctx.strokeStyle = car.color;
         ctx.beginPath();
-        ctx.moveTo(car.movePoints[0][0], car.movePoints[0][1]);
+        ctx.moveTo(car.movePoints[0].x, car.movePoints[0].y);
         for (var i = 1; i < car.movePoints.length; i++) {
-          ctx.lineTo(car.movePoints[i][0], car.movePoints[i][1]);
+          ctx.lineTo(car.movePoints[i].x, car.movePoints[i].y);
         }
         ctx.stroke();
         ctx.closePath();
@@ -164,10 +162,35 @@ BasicGame.Game.prototype = {
 
   update: function () {
     if (this.carDragged) {
-      var tileSize = 50;
-      var snapX = this.input.x; // Math.floor(this.input.x / tileSize) * tileSize + tileSize / 2;
-      var snapY = this.input.y; //Math.floor(this.input.y / tileSize) * tileSize;
-      this.carDragged.movePoints.push([snapX, snapY]);
+      this.carDragged.movePoints.push(this.input.position.clone());
+    } else {
+
+    var me = this;
+    this.cars.forEach(function(car) {
+      if (!car.driving) return;
+
+      var nextPoint = car.movePoints[0];
+      while (nextPoint) {
+        me.patients.forEach(function(patient) {
+          if (nextPoint.distance(patient.center) < 20) {
+            me.carArrivedAtPatient(car, patient);
+          }
+        });
+        if (nextPoint.distance(car.center) > 10) break;
+        
+        car.movePoints = car.movePoints.splice(1);
+        nextPoint = car.movePoints[0];
+      }
+
+      if (nextPoint) {
+        var SPEED = 100;
+        me.physics.moveToXY(car, nextPoint.x, nextPoint.y, SPEED);
+        car.rotation = me.physics.angleBetween(car, nextPoint) + Math.PI / 2;
+      } else {
+        car.body.velocity.x = 0;
+        car.body.velocity.y = 0;
+      }
+    });
     }
   },
 
@@ -199,25 +222,6 @@ BasicGame.Game.prototype = {
     this.selected = sprite;
   },
 
-  carDispatched: function(dest) {
-    if (!this.selected || this.selected.full) return;
-
-    if (this.selected.moveTween) this.selected.moveTween.stop();
-    this.selected.moveTween = this.add.tween(this.selected);
-    this.selected.moveTween.onComplete.add(this.carArrivedAtPatient, this);
-    var me = this;
-    dest.events.onKilled.add((function(car) {
-      return function() {
-        me.patientForCarDied(dest, car);
-      };
-    })(this.selected), this);
-    this.selected.dest = dest;
-    var distance = this.selected.center.distance(dest.center);
-    this.selected.moveTween.to({ x: dest.x, y: dest.y }, distance * 10, Phaser.Easing.Quadratic.InOut, true);
-
-    this.selected.rotation = this.physics.angleBetween(this.selected, this.selected.dest) + Math.PI / 2;
-  },
-
   patientForCarDied: function(patient, car) {
     car.moveTween.stop();
     car.full = false;
@@ -225,11 +229,10 @@ BasicGame.Game.prototype = {
     car.dest = null;
   },
 
-  carArrivedAtPatient: function(car) {
+  carArrivedAtPatient: function(car, patient) {
     car.full = true;
-    car.patient = car.dest;
-    car.patient.center = car.center;
-    car.patient.visible = false;
+    patient.center = car.center;
+    patient.visible = false;
   },
 
   carArrivedAtHospital: function(car) {
@@ -247,19 +250,6 @@ BasicGame.Game.prototype = {
     }
     car.full = false;
     car.dest = null;
-  },
-
-  toHospital: function(hospital) {
-    if (!this.selected) return;
-
-    if (this.selected.moveTween) this.selected.moveTween.stop();
-    this.selected.moveTween = this.add.tween(this.selected);
-    this.selected.moveTween.onComplete.add(this.carArrivedAtHospital, this);
-    this.selected.dest = hospital;
-    var distance = this.selected.center.distance(hospital.center);
-    this.selected.moveTween.to({ x: hospital.center.x, y: hospital.center.y }, distance * 20, Phaser.Easing.Quadratic.InOut, true);
-
-    this.selected.rotation = this.physics.angleBetween(this.selected, this.selected.dest) + Math.PI / 2;
   },
 
   patientDies: function(patient) {
@@ -285,11 +275,13 @@ BasicGame.Game.prototype = {
     car.dragging = true;
     car.movePoints = [];
     this.carDragged = car;
+    car.driving = false;
   },
 
   endDragCar: function(car) {
     car.dragging = false;
     this.carDragged = null;
+    car.driving = true;
   }
 
 };
