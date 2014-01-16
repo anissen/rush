@@ -26,7 +26,7 @@ BasicGame.Preloader.prototype = {
     //  As this is just a Project Template I've not provided these assets, the lines below won't work as the files themselves will 404, they are just an example of use.
     this.load.image('titlepage', 'assets/images/title.png');
     this.load.atlas('playButton', 'assets/images/button_texture_atlas.png', 'assets/images/button_texture_atlas.json');
-    this.load.audio('titleMusic', ['assets/music/main_menu.mp3']);
+    //this.load.audio('titleMusic', ['assets/music/main_menu.mp3']);
     this.load.bitmapFont('desyrel', 'assets/fonts/desyrel-pink.png', 'assets/fonts/desyrel-pink.xml');
     //this.load.bitmapFont('caslon', 'fonts/caslon.png', 'fonts/caslon.xml');
     //  + lots of other required assets here
@@ -44,6 +44,7 @@ BasicGame.Preloader.prototype = {
   create: function () {
     //  Once the load has finished we disable the crop because we're going to sit in the update loop for a short while as the music decodes
     this.preloadBar.cropEnabled = false;
+    this.game.state.start('Game');
   },
 
   update: function () {
@@ -56,11 +57,12 @@ BasicGame.Preloader.prototype = {
     //  If you don't have any music in your game then put the game.state.start line into the create function and delete
     //  the update function completely.
     
+    /*
     if (this.cache.isSoundDecoded('titleMusic') && this.ready === false) {
       this.ready = true;
       this.game.state.start('MainMenu');
     }
-
+    */
   }
 
 };
