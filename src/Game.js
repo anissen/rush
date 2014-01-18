@@ -1,6 +1,6 @@
 
 BasicGame.Game = function (game) {
-  this.CARS = 2;
+  this.CARS = 1;
   this.PATIENTS = 6;
   this.HOSPITALS = 1;
 
@@ -10,7 +10,7 @@ BasicGame.Game = function (game) {
   this.tileSize = 50;
   this.carDragged = null;
 
-  this.patientTimerr = null;
+  this.patientTimer = null;
 };
 
 BasicGame.Game.prototype = {
@@ -47,6 +47,16 @@ BasicGame.Game.prototype = {
       car.color = this.randomColor();
       car.dragging = false;
       car.movePoints = [];
+    }
+
+    this.blocks = this.add.group();
+    for (var y = 0; y < 2; y++) {
+      for (var x = 0; x < 2; x++) {
+        var block = this.blocks.create(340 + 350 * x, 200 + 350 * y, 'block');
+        block.anchor.setTo(0.5, 0.5);
+        block.scale.setTo(11, 11);
+        block.body.immovable = true;
+      }
     }
 
     this.popupTexts = this.add.group();
@@ -118,7 +128,11 @@ BasicGame.Game.prototype = {
 
     var me = this;
     this.cars.forEach(function(car) {
-      if (!car.driving) return;
+      if (!car.driving) {
+        car.body.velocity.x = 0;
+        car.body.velocity.y = 0;
+        return;
+      }
 
       var nextPoint = car.movePoints[0];
       while (nextPoint) {
@@ -140,6 +154,9 @@ BasicGame.Game.prototype = {
 
       if (nextPoint) {
         var SPEED = 100;
+        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 30; }, null, me);
+
+        // TODO: Handle collisions between patients and hospitals instead of using distance??        
         me.physics.moveToXY(car, nextPoint.x, nextPoint.y, SPEED);
         car.rotation = me.physics.angleBetween(car, nextPoint) + Math.PI / 2;
       } else {
