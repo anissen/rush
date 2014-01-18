@@ -1,53 +1,23 @@
 
 BasicGame.Game = function (game) {
-  //  When a State is added to Phaser it automatically has the following properties set on it, even if they already exist:
-  /*
-  this.game;    //  a reference to the currently running game
-  this.add;   //  used to add sprites, text, groups, etc
-  this.camera;  //  a reference to the game camera
-  this.cache;   //  the game cache
-  this.input;   //  the global input manager (you can access this.input.keyboard, this.input.mouse, as well from it)
-  this.load;    //  for preloading assets
-  this.math;    //  lots of useful common math operations
-  this.sound;   //  the sound manager - add a sound, play one, set-up markers, etc
-  this.stage;   //  the game stage
-  this.time;    //  the clock
-  this.tweens;  //  the tween manager
-  this.world;   //  the game world
-  this.particles; //  the particle manager
-  this.physics; //  the physics manager
-  this.rnd;   //  the repeatable random number generator
-  */
-  //  You can use any of these from any function within this State.
-  //  But do consider them as being 'reserved words', i.e. don't create a property for your own game called "world" or you'll over-write the world reference.
   this.CARS = 2;
   this.PATIENTS = 6;
   this.HOSPITALS = 1;
 
-  //this.cars;
-  //this.patients;
-  //this.hospitals;
-
   this.maxTimeOut = 60000;
 
-  this.selected = null;
-
-  //this.loadingText;
-  //this.scoreText;
-
   this.score = 0;
-
-  //this.popupTexts;
   this.tileSize = 50;
   this.carDragged = null;
+
+  this.patientTimerr = null;
 };
 
 BasicGame.Game.prototype = {
   create: function () {
-    //game.world.setBounds(50, 50, game.width - 50, game.height - 50);
     this.world.setBounds(0, 0, this.game.width, this.game.height);
 
-    //  For browsers that support it, this keeps our pixel art looking crisp
+    // For browsers that support it, this keeps our pixel art looking crisp
     // This only works when you use Phaser.CANVAS as the renderer
     Phaser.Canvas.setSmoothingEnabled(this.game.context, false);
     var map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
@@ -56,29 +26,13 @@ BasicGame.Game.prototype = {
 
     this.hospitals = this.add.group();
     for (var h = 0; h < this.HOSPITALS; h++) {
-      // var hospital = hospitals.create(this.world.randomX, this.world.randomY, 'hospital');
       var hospital = this.hospitals.create(this.world.centerX, this.world.centerY, 'hospital');
       hospital.anchor.setTo(0.5, 0.5);
       hospital.inputEnabled = true;
     }
 
     this.patients = this.add.group();
-    for (var p = 0; p < this.PATIENTS; p++) {
-      var patient = this.patients.create(this.snapX(this.world.randomX), this.snapY(this.world.randomY), 'patient');
-      patient.anchor.setTo(0.5, 0.5);
-      patient.inputEnabled = true;
-
-      patient.countDown = this.rnd.realInRange(this.maxTimeOut / 5, this.maxTimeOut);
-      patient.countTween = this.add.tween(patient);
-      patient.countTween.onComplete.add(this.patientDies, this);
-      patient.countTween.to({ countDown: 0 }, patient.countDown, Phaser.Easing.Quadratic.Out, true);
-
-      this.add.tween(patient)
-        .to({ rotation: -Math.PI / 6 }, 1000, Phaser.Easing.Quadratic.InOut)
-        .to({ rotation: Math.PI / 6 }, 1000, Phaser.Easing.Quadratic.InOut)
-        .loop()
-        .start();
-    }
+    this.patientTimer = this.time.events.loop(Phaser.Timer.SECOND * 5, this.newPatient, this);
 
     this.cars = this.add.group();
     for (var c = 0; c < this.CARS; c++) {
@@ -98,9 +52,6 @@ BasicGame.Game.prototype = {
     this.popupTexts = this.add.group();
 
     this.scoreText = this.add.text(16, 16, '0 patients saved', { font: "16pt Courier", fill: "#ee0000", stroke: "#ffffff", strokeThickness: 2 });
-
-    //loadingText.destroy();
-    //this.stage.scale.startFullScreen();
   },
 
   render: function() {
@@ -163,7 +114,7 @@ BasicGame.Game.prototype = {
   update: function () {
     if (this.carDragged) {
       this.carDragged.movePoints.push(this.input.position.clone());
-    } else {
+    }
 
     var me = this;
     this.cars.forEach(function(car) {
@@ -172,11 +123,16 @@ BasicGame.Game.prototype = {
       var nextPoint = car.movePoints[0];
       while (nextPoint) {
         me.patients.forEach(function(patient) {
-          if (nextPoint.distance(patient.center) < 20) {
+          if (car.center.distance(patient.center) < 50) {
             me.carArrivedAtPatient(car, patient);
           }
         });
-        if (nextPoint.distance(car.center) > 10) break;
+        me.hospitals.forEach(function(hospital) {
+          if (car.center.distance(hospital.center) < 50) {
+            me.carArrivedAtHospital(car, hospital);
+          }
+        });
+        if (nextPoint.distance(car.center) > 20) break;
         
         car.movePoints = car.movePoints.splice(1);
         nextPoint = car.movePoints[0];
@@ -191,7 +147,23 @@ BasicGame.Game.prototype = {
         car.body.velocity.y = 0;
       }
     });
-    }
+  },
+
+  newPatient: function() {
+    var patient = this.patients.create(this.snapX(this.world.randomX), this.snapY(this.world.randomY), 'patient');
+    patient.anchor.setTo(0.5, 0.5);
+    patient.inputEnabled = true;
+
+    patient.countDown = this.rnd.realInRange(this.maxTimeOut / 5, this.maxTimeOut);
+    patient.countTween = this.add.tween(patient);
+    patient.countTween.onComplete.add(this.patientDies, this);
+    patient.countTween.to({ countDown: 0 }, patient.countDown, Phaser.Easing.Quadratic.Out, true);
+
+    this.add.tween(patient)
+      .to({ rotation: -Math.PI / 6 }, 1000, Phaser.Easing.Quadratic.InOut)
+      .to({ rotation: Math.PI / 6 }, 1000, Phaser.Easing.Quadratic.InOut)
+      .loop()
+      .start();
   },
 
   quitGame: function (pointer) {
@@ -231,11 +203,12 @@ BasicGame.Game.prototype = {
 
   carArrivedAtPatient: function(car, patient) {
     car.full = true;
+    car.patient = patient;
     patient.center = car.center;
     patient.visible = false;
   },
 
-  carArrivedAtHospital: function(car) {
+  carArrivedAtHospital: function(car, hospital) {
     if (car.full) {
       this.popupText(car.patient.center.x, car.patient.center.y, 'A patient was saved', 'green');
       this.score++;
@@ -243,13 +216,12 @@ BasicGame.Game.prototype = {
       car.patient.countTween.stop();
       car.patient.destroy();
 
-      this.add.tween(car.dest)
+      this.add.tween(hospital)
         .to({ rotation: this.rnd.normal() * 3 }, 500, Phaser.Easing.Cubic.InOut)
         .to({ rotation: 0 }, 500, Phaser.Easing.Cubic.InOut)
         .start();
     }
     car.full = false;
-    car.dest = null;
   },
 
   patientDies: function(patient) {
