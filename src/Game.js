@@ -38,8 +38,8 @@ BasicGame.Game.prototype = {
     for (var c = 0; c < this.CARS; c++) {
       var car = this.cars.create(this.world.randomX, this.world.randomY, 'car');
       car.anchor.setTo(0.5, 0.5);
+      car.scale.setTo(2, 2);
       car.inputEnabled = true;
-      car.events.onInputDown.add(this.selectCar, this);
       car.input.enableDrag(false, true);
       car.input.setDragLock(false, false);
       car.events.onDragStart.add(this.startDragCar, this);
@@ -67,22 +67,13 @@ BasicGame.Game.prototype = {
   render: function() {
     var ctx = this.game.context;
 
-    if (this.selected) {
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = this.selected.color;
-      ctx.beginPath();
-      ctx.arc(this.selected.center.x, this.selected.center.y, 30, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.closePath();
-    }
-
     this.cars.forEach(function(car) {
       if (car.movePoints.length > 0) {
         ctx.lineWidth = 4;
         ctx.strokeStyle = car.color;
         ctx.beginPath();
-        ctx.moveTo(car.movePoints[0].x, car.movePoints[0].y);
-        for (var i = 1; i < car.movePoints.length; i++) {
+        ctx.moveTo(car.center.x, car.center.y);
+        for (var i = 0; i < car.movePoints.length; i++) {
           ctx.lineTo(car.movePoints[i].x, car.movePoints[i].y);
         }
         ctx.stroke();
@@ -100,7 +91,7 @@ BasicGame.Game.prototype = {
 
       if (car.full) {
         ctx.beginPath();
-        ctx.arc(car.center.x, car.center.y, 30, 0, Math.PI * 2);
+        ctx.arc(car.center.x, car.center.y, 50, 0, Math.PI * 2);
         ctx.closePath();
         ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
         ctx.fill();
@@ -136,25 +127,16 @@ BasicGame.Game.prototype = {
 
       var nextPoint = car.movePoints[0];
       while (nextPoint) {
-        me.patients.forEach(function(patient) {
-          if (car.center.distance(patient.center) < 50) {
-            me.carArrivedAtPatient(car, patient);
-          }
-        });
-        me.hospitals.forEach(function(hospital) {
-          if (car.center.distance(hospital.center) < 50) {
-            me.carArrivedAtHospital(car, hospital);
-          }
-        });
         if (nextPoint.distance(car.center) > 20) break;
-        
         car.movePoints = car.movePoints.splice(1);
         nextPoint = car.movePoints[0];
       }
 
       if (nextPoint) {
-        var SPEED = 100;
-        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 30; }, null, me);
+        var SPEED = 250;
+        me.physics.overlap(car, me.patients, me.carArrivedAtPatient, null, me);
+        me.physics.overlap(car, me.hospitals, me.carArrivedAtHospital, null, me);
+        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 100; }, null, me);
 
         // TODO: Handle collisions between patients and hospitals instead of using distance??        
         me.physics.moveToXY(car, nextPoint.x, nextPoint.y, SPEED);
@@ -205,10 +187,6 @@ BasicGame.Game.prototype = {
       .to({}, 1700)
       .start()
       .onComplete.add(function() { console.log('destroyed'); t.destroy(); });
-  },
-
-  selectCar: function(sprite) {
-    this.selected = sprite;
   },
 
   patientForCarDied: function(patient, car) {
