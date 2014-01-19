@@ -62,6 +62,8 @@ BasicGame.Game.prototype = {
     this.popupTexts = this.add.group();
 
     this.scoreText = this.add.text(16, 16, '0 patients saved', { font: "16pt Courier", fill: "#ee0000", stroke: "#ffffff", strokeThickness: 2 });
+
+    this.newPatient(); // call immediately, for testing purposes
   },
 
   render: function() {
@@ -102,7 +104,7 @@ BasicGame.Game.prototype = {
     this.patients.forEach(function(patient) {
       ctx.beginPath();
       var timePercentage = (patient.countDown / me.maxTimeOut);
-      ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2) * timePercentage, false); // 60000 is max count down for now
+      ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
       ctx.lineWidth = 6;
 
       // from: 0, 255, 0
@@ -138,7 +140,6 @@ BasicGame.Game.prototype = {
         me.physics.overlap(car, me.hospitals, me.carArrivedAtHospital, null, me);
         me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 100; }, null, me);
 
-        // TODO: Handle collisions between patients and hospitals instead of using distance??        
         me.physics.moveToXY(car, nextPoint.x, nextPoint.y, SPEED);
         car.rotation = me.physics.angleBetween(car, nextPoint) + Math.PI / 2;
       } else {
@@ -149,7 +150,20 @@ BasicGame.Game.prototype = {
   },
 
   newPatient: function() {
-    var patient = this.patients.create(this.snapX(this.world.randomX), this.snapY(this.world.randomY), 'patient');
+    var randomBlock = this.blocks.getRandom();
+    var distanceFromBlock = 30;
+    var patientX = randomBlock.topLeft.x - distanceFromBlock;
+    var patientY = randomBlock.topLeft.y - distanceFromBlock;
+    var horizontally = this.rnd.pick([0,1]) < 0.5;
+    if (horizontally) {
+      patientX += this.rnd.realInRange(0, 1) * randomBlock.width;
+      patientY += this.rnd.pick([0,1]) * (randomBlock.height + distanceFromBlock * 2);
+    } else {
+      patientX += this.rnd.pick([0,1]) * (randomBlock.width + distanceFromBlock * 2);
+      patientY += this.rnd.realInRange(0, 1) * randomBlock.height;
+    }
+
+    var patient = this.patients.create(patientX, patientY, 'patient');
     patient.anchor.setTo(0.5, 0.5);
     patient.inputEnabled = true;
 
