@@ -31,6 +31,7 @@ BasicGame.Game.prototype = {
     for (var h = 0; h < this.HOSPITALS; h++) {
       var hospital = this.hospitals.create(this.world.centerX, this.world.centerY, 'hospital');
       hospital.anchor.setTo(0.5, 0.5);
+      hospital.scale.setTo(0.8, 0.8);
       hospital.inputEnabled = true;
     }
 
@@ -55,8 +56,8 @@ BasicGame.Game.prototype = {
 
     this.blocks = this.add.group();
     for (var y = 0; y < 2; y++) {
-      for (var x = 0; x < 2; x++) {
-        var block = this.blocks.create(340 + 350 * x, 200 + 350 * y, 'block');
+      for (var x = 0; x < 3; x++) {
+        var block = this.blocks.create(200 + 300 * x, 200 + 350 * y, 'block');
         block.anchor.setTo(0.5, 0.5);
         block.scale.setTo(11, 11);
         block.body.immovable = true;
@@ -185,15 +186,6 @@ BasicGame.Game.prototype = {
       .onComplete.add(function() { t.destroy(); });
   },
 
-  patientForCarDied: function(patient, car) {
-    car.moveTween.stop();
-    for (var i = 0; i < patientCount; i++) {
-      if (car.patients[i] == patient) {
-        car.patients.splice(i, 1);
-      }
-    }
-  },
-
   carArrivedAtPatient: function(car, patient) {
     if (!patient.visible) return;
     car.patients.push(patient);
@@ -223,20 +215,20 @@ BasicGame.Game.prototype = {
 
   patientDies: function(patient) {
     this.popupText(patient.center.x, patient.center.y, 'A patient has died!', 'red');
-    patient.kill();
+    this.cars.forEach(function(car) {
+      for (var i = 0; i < car.patients.length; i++) {
+        if (car.patients[i] == patient) {
+          car.patients.splice(i, 1);
+          return;
+        }
+      }
+    });
+    patient.destroy();
   },
 
   randomColor: function() {
     var hexColors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#ffffff", "#dddddd", "#aaaaaa"]; // , "#111111" <- black
     return this.rnd.pick(hexColors);
-  },
-
-  snapX: function(x) {
-    return Math.floor(x / this.tileSize) * this.tileSize; //  + tileSize / 2
-  },
-
-  snapY: function(y) {
-    return Math.floor(y / this.tileSize) * this.tileSize;
   },
 
   startDragCar: function(car) {
