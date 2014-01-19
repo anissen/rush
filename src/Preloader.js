@@ -30,7 +30,7 @@ BasicGame.Preloader.prototype = {
     this.load.bitmapFont('desyrel', 'assets/fonts/desyrel-pink.png', 'assets/fonts/desyrel-pink.xml');
     //this.load.bitmapFont('caslon', 'fonts/caslon.png', 'fonts/caslon.xml');
     //  + lots of other required assets here
-    this.stage.backgroundColor = '#440055';
+    this.stage.backgroundColor = '#555555';
 
     loadingText = this.add.text(512, 570, 'Loading', { font: "30pt Courier", fill: "#ee0000", stroke: "#ffffff", strokeThickness: 5, align: 'center' });
     loadingText.anchor.setTo(0.5, 0.5);

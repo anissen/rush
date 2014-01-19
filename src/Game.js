@@ -15,14 +15,17 @@ BasicGame.Game = function (game) {
 
 BasicGame.Game.prototype = {
   create: function () {
-    this.world.setBounds(0, 0, this.game.width, this.game.height);
+    //this.world.setBounds(0, 0, this.game.width, this.game.height);
 
     // For browsers that support it, this keeps our pixel art looking crisp
     // This only works when you use Phaser.CANVAS as the renderer
     Phaser.Canvas.setSmoothingEnabled(this.game.context, false);
+    
+    /*
     var map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
     map.anchor.setTo(0.5, 0.5);
     map.scale.setTo(50, 50);
+    */
 
     this.hospitals = this.add.group();
     for (var h = 0; h < this.HOSPITALS; h++) {
@@ -32,11 +35,11 @@ BasicGame.Game.prototype = {
     }
 
     this.patients = this.add.group();
-    this.patientTimer = this.time.events.loop(Phaser.Timer.SECOND * 5, this.newPatient, this);
+    this.patientTimer = this.time.events.loop(Phaser.Timer.SECOND * 3, this.newPatient, this);
 
     this.cars = this.add.group();
     for (var c = 0; c < this.CARS; c++) {
-      var car = this.cars.create(this.world.randomX, this.world.randomY, 'car');
+      var car = this.cars.create(this.world.centerX, this.world.centerY, 'car');
       car.anchor.setTo(0.5, 0.5);
       car.scale.setTo(2, 2);
       car.inputEnabled = true;
@@ -47,6 +50,7 @@ BasicGame.Game.prototype = {
       car.color = this.randomColor();
       car.dragging = false;
       car.movePoints = [];
+      car.patients = [];
     }
 
     this.blocks = this.add.group();
@@ -61,9 +65,7 @@ BasicGame.Game.prototype = {
 
     this.popupTexts = this.add.group();
 
-    this.scoreText = this.add.text(16, 16, '0 patients saved', { font: "16pt Courier", fill: "#ee0000", stroke: "#ffffff", strokeThickness: 2 });
-
-    this.newPatient(); // call immediately, for testing purposes
+    this.scoreText = this.add.text(16, 16, '0 patients saved', { font: "32pt Courier", fill: "#ee0000", stroke: "#ffffff", strokeThickness: 2 });
   },
 
   render: function() {
@@ -81,23 +83,6 @@ BasicGame.Game.prototype = {
         ctx.stroke();
         ctx.closePath();
       }
-
-      if (!car.dest) return;
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = car.color;
-      ctx.beginPath();
-      ctx.moveTo(car.center.x, car.center.y);
-      ctx.lineTo(car.dest.center.x, car.dest.center.y);
-      ctx.stroke();
-      ctx.closePath();
-
-      if (car.full) {
-        ctx.beginPath();
-        ctx.arc(car.center.x, car.center.y, 50, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
-        ctx.fill();
-      }
     });
 
     var me = this;
@@ -106,9 +91,6 @@ BasicGame.Game.prototype = {
       var timePercentage = (patient.countDown / me.maxTimeOut);
       ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
       ctx.lineWidth = 6;
-
-      // from: 0, 255, 0
-      // to: 255, 0, 0
       ctx.strokeStyle = 'rgb(' + Math.round(255 - 255 * timePercentage) + ', ' + Math.round(255 * timePercentage) + ', 0)';
       ctx.stroke();
     });
@@ -200,37 +182,43 @@ BasicGame.Game.prototype = {
     this.add.tween(t)
       .to({}, 1700)
       .start()
-      .onComplete.add(function() { console.log('destroyed'); t.destroy(); });
+      .onComplete.add(function() { t.destroy(); });
   },
 
   patientForCarDied: function(patient, car) {
     car.moveTween.stop();
-    car.full = false;
-    car.patient = false;
-    car.dest = null;
+    for (var i = 0; i < patientCount; i++) {
+      if (car.patients[i] == patient) {
+        car.patients.splice(i, 1);
+      }
+    }
   },
 
   carArrivedAtPatient: function(car, patient) {
-    car.full = true;
-    car.patient = patient;
+    if (!patient.visible) return;
+    car.patients.push(patient);
     patient.center = car.center;
     patient.visible = false;
   },
 
   carArrivedAtHospital: function(car, hospital) {
-    if (car.full) {
-      this.popupText(car.patient.center.x, car.patient.center.y, 'A patient was saved', 'green');
-      this.score++;
-      this.scoreText.content = this.score + ' patients saved';
-      car.patient.countTween.stop();
-      car.patient.destroy();
+    var patientCount = car.patients.length;
+    if (!patientCount) return;
 
-      this.add.tween(hospital)
-        .to({ rotation: this.rnd.normal() * 3 }, 500, Phaser.Easing.Cubic.InOut)
-        .to({ rotation: 0 }, 500, Phaser.Easing.Cubic.InOut)
-        .start();
+    this.popupText(car.center.x, car.center.y, patientCount + ' patient(s) was saved', 'green');
+    this.score += patientCount;
+    this.scoreText.content = this.score + ' patients saved';
+    while (car.patients.length > 0) {
+      var patient = car.patients[0];
+      patient.countTween.stop();
+      patient.destroy();
+      car.patients.splice(0, 1);
     }
-    car.full = false;
+
+    this.add.tween(hospital)
+      .to({ rotation: this.rnd.normal() * 3 }, 500, Phaser.Easing.Cubic.InOut)
+      .to({ rotation: 0 }, 500, Phaser.Easing.Cubic.InOut)
+      .start();
   },
 
   patientDies: function(patient) {
@@ -239,9 +227,8 @@ BasicGame.Game.prototype = {
   },
 
   randomColor: function() {
-    var me = this;
-    var rndColorInt = function() { return me.rnd.integerInRange(0, 255); };
-    return 'rgb(' + rndColorInt() + ',' + rndColorInt() + ',' + rndColorInt() + ')';
+    var hexColors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#ffffff", "#dddddd", "#aaaaaa"]; // , "#111111" <- black
+    return this.rnd.pick(hexColors);
   },
 
   snapX: function(x) {
