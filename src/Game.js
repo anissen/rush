@@ -1,6 +1,6 @@
 
 BasicGame.Game = function (game) {
-  this.CARS = 1;
+  this.CARS = 2;
   this.PATIENTS = 6;
   this.HOSPITALS = 1;
 
@@ -88,8 +88,17 @@ BasicGame.Game.prototype = {
 
     var me = this;
     this.patients.forEach(function(patient) {
-      ctx.beginPath();
       var timePercentage = (patient.countDown / me.maxTimeOut);
+
+      // black stroke
+      ctx.beginPath();
+      ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2 - 0.03, 0.03 -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = 'black';
+      ctx.stroke();
+
+      // arc
+      ctx.beginPath();
       ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
       ctx.lineWidth = 6;
       ctx.strokeStyle = 'rgb(' + Math.round(255 - 255 * timePercentage) + ', ' + Math.round(255 * timePercentage) + ', 0)';
@@ -154,6 +163,8 @@ BasicGame.Game.prototype = {
     patient.countTween = this.add.tween(patient);
     patient.countTween.onComplete.add(this.patientDies, this);
     patient.countTween.to({ countDown: 0 }, patient.countDown, Phaser.Easing.Quadratic.Out, true);
+
+    this.patients.sort('countDown', Phaser.Group.SORT_DESCENDING);
 
     this.add.tween(patient)
       .to({ rotation: -Math.PI / 6 }, 1000, Phaser.Easing.Quadratic.InOut)
