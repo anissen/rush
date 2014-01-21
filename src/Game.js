@@ -9,8 +9,7 @@ BasicGame.Game = function (game) {
   this.score = 0;
   this.tileSize = 50;
 
-  this.carDraggedByPointer1 = null;
-  this.carDraggedByPointer2 = null;
+  this.carDraggedByPointerId = [];
 
   this.patientTimer = null;
 };
@@ -106,13 +105,21 @@ BasicGame.Game.prototype = {
       ctx.strokeStyle = 'rgb(' + Math.round(255 - 255 * timePercentage) + ', ' + Math.round(255 * timePercentage) + ', 0)';
       ctx.stroke();
     });
+
+    // this.game.debug.renderPointer(this.input.mousePointer);
+    // this.game.debug.renderPointer(this.input.pointer1);
+    // this.game.debug.renderPointer(this.input.pointer2);
   },
 
   update: function () {
-    if (this.carDraggedByPointer1 && this.input.activePointer.id === 1) {
-      this.carDraggedByPointer1.movePoints.push(this.input.activePointer.position.clone());
-    } else if (this.carDraggedByPointer2 && this.input.activePointer.id === 2) {
-      this.carDraggedByPointer2.movePoints.push(this.input.activePointer.position.clone());
+    for (var id in this.carDraggedByPointerId) {
+      var pointer = (id === '0' ? this.input.mousePointer : this.input['pointer' + id]);
+      if (!pointer || !pointer.active) continue;
+
+      var draggedCar = this.carDraggedByPointerId[id];
+      if (!draggedCar) continue;
+
+      draggedCar.movePoints.push(pointer.position.clone());
     }
 
     var me = this;
@@ -251,22 +258,14 @@ BasicGame.Game.prototype = {
     car.movePoints = [];
     car.driving = false;
 
-    car.draggedByPointerId = this.input.activePointer.id;
-    if (car.draggedByPointerId === 1) {
-      this.carDraggedByPointer1 = car;
-    } else {
-      this.carDraggedByPointer2 = car;
-    }
+    this.carDraggedByPointerId[this.input.activePointer.id] = car;
   },
 
   endDragCar: function(car) {
     car.dragging = false;
     car.driving = true;
-    if (car.draggedByPointerId === 1) {
-      this.carDraggedByPointer1 = null;
-    } else {
-      this.carDraggedByPointer2 = null;
-    }
+
+    this.carDraggedByPointerId[this.input.activePointer.id] = null;
   }
 
 };
