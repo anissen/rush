@@ -8,7 +8,9 @@ BasicGame.Game = function (game) {
 
   this.score = 0;
   this.tileSize = 50;
-  this.carDragged = null;
+
+  this.carDraggedByPointer1 = null;
+  this.carDraggedByPointer2 = null;
 
   this.patientTimer = null;
 };
@@ -107,8 +109,10 @@ BasicGame.Game.prototype = {
   },
 
   update: function () {
-    if (this.carDragged) {
-      this.carDragged.movePoints.push(this.input.position.clone());
+    if (this.carDraggedByPointer1 && this.input.activePointer.id === 1) {
+      this.carDraggedByPointer1.movePoints.push(this.input.activePointer.position.clone());
+    } else if (this.carDraggedByPointer2 && this.input.activePointer.id === 2) {
+      this.carDraggedByPointer2.movePoints.push(this.input.activePointer.position.clone());
     }
 
     var me = this;
@@ -245,14 +249,24 @@ BasicGame.Game.prototype = {
   startDragCar: function(car) {
     car.dragging = true;
     car.movePoints = [];
-    this.carDragged = car;
     car.driving = false;
+
+    car.draggedByPointerId = this.input.activePointer.id;
+    if (car.draggedByPointerId === 1) {
+      this.carDraggedByPointer1 = car;
+    } else {
+      this.carDraggedByPointer2 = car;
+    }
   },
 
   endDragCar: function(car) {
     car.dragging = false;
-    this.carDragged = null;
     car.driving = true;
+    if (car.draggedByPointerId === 1) {
+      this.carDraggedByPointer1 = null;
+    } else {
+      this.carDraggedByPointer2 = null;
+    }
   }
 
 };

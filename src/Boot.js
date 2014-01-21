@@ -21,7 +21,7 @@ BasicGame.Boot.prototype = {
   },
 
   create: function () {
-    this.game.input.maxPointers = 1;
+    this.game.input.maxPointers = 2;
     this.game.stage.disableVisibilityChange = true;
 
     if (this.game.device.desktop) {
