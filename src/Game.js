@@ -20,7 +20,7 @@ BasicGame.Game.prototype = {
     // For browsers that support it, this keeps our pixel art looking crisp
     // This only works when you use Phaser.CANVAS as the renderer
     Phaser.Canvas.setSmoothingEnabled(this.game.context, false);
-    
+  
     /*
     var map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
     map.anchor.setTo(0.5, 0.5);
@@ -208,9 +208,9 @@ BasicGame.Game.prototype = {
     var patientCount = car.patients.length;
     if (!patientCount) return;
 
-    this.popupText(car.center.x, car.center.y, patientCount + ' patient(s) was saved', 'green');
+    this.popupText(car.center.x, car.center.y, patientCount + ' patient' + (patientCount > 1 ? 's' : '') + ' was saved', 'green');
     this.score += patientCount;
-    this.scoreText.content = this.score + ' patients saved';
+    this.scoreText.content = this.score + ' patient' + (patientCount > 1 ? 's' : '') + ' saved';
     while (car.patients.length > 0) {
       var patient = car.patients[0];
       patient.countTween.stop();
