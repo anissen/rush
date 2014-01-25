@@ -3,7 +3,7 @@ BasicGame.Game = function (game) {
   this.CARS = 2;
   this.PATIENTS = 6;
   this.HOSPITALS = 1;
-  this.colors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#ffffff", "#dddddd", "#aaaaaa"];
+  this.colors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#dddddd", "#aaaaaa"];
 
   this.maxTimeOut = 60000;
 
@@ -24,7 +24,7 @@ BasicGame.Game.prototype = {
     // For browsers that support it, this keeps our pixel art looking crisp
     // This only works when you use Phaser.CANVAS as the renderer
     Phaser.Canvas.setSmoothingEnabled(this.game.context, false);
-    console.log(this.game);
+
     this.game.onPause.add(function() {
       console.log('game paused');
     });
@@ -79,52 +79,65 @@ BasicGame.Game.prototype = {
 
     this.popupTexts = this.add.group();
 
-    this.scoreText = this.add.text(16, 16, '0 patients saved', { font: "32pt Courier", fill: "#ee0000", stroke: "#ffffff", strokeThickness: 2 });
+    this.scoreText = this.add.text(this.world.centerX, 16, '0 patients saved', { font: "bold 24px Verdana", fill: "#FFFFFF", stroke: "#FF4136", strokeThickness: 5 });
+    this.scoreText.anchor.setTo(0.5, 0.5);
 
-    var me = this;
-    var imageObj = new Image();
-    imageObj.onload = function() {
-      me.pattern = me.game.context.createPattern(imageObj, 'repeat');
-    };
-    imageObj.src = 'http://www.html5canvastutorials.com/demos/assets/wood-pattern.png';
+    // var me = this;
+    // var imageObj = new Image();
+    // imageObj.onload = function() {
+    //   me.pattern = me.game.context.createPattern(imageObj, 'repeat');
+    // };
+    // imageObj.src = 'http://www.html5canvastutorials.com/demos/assets/wood-pattern.png';
   },
 
   render: function() {
     var ctx = this.game.context;
 
+    ctx.setLineDash([20,6]);
+
     var me = this;
     this.cars.forEach(function(car) {
       if (car.movePoints.length > 0) {
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = car.color;
-        //ctx.fillStyle = me.pattern;
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = 'black';
         ctx.beginPath();
-        ctx.moveTo(car.center.x, car.center.y);
-        for (var i = 0; i < car.movePoints.length; i++) {
+        var lastIndex = car.movePoints.length - 1;
+        ctx.moveTo(car.movePoints[lastIndex].x, car.movePoints[lastIndex].y);
+        for (var i = lastIndex - 1; i >= 0; i--) {
           ctx.lineTo(car.movePoints[i].x, car.movePoints[i].y);
         }
         ctx.stroke();
-        //ctx.fill();
+        ctx.closePath();
 
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = car.color;
+        ctx.beginPath();
+        ctx.moveTo(car.movePoints[lastIndex].x, car.movePoints[lastIndex].y);
+        for (var i = lastIndex - 1; i >= 0; i--) {
+          ctx.lineTo(car.movePoints[i].x, car.movePoints[i].y);
+        }
+        ctx.stroke();
         ctx.closePath();
       }
     });
+
+    ctx.setLineDash([]);
 
     this.patients.forEach(function(patient) {
       var timePercentage = (patient.countDown / me.maxTimeOut);
 
       // black stroke
       ctx.beginPath();
-      ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2 - 0.03, 0.03 -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
-      ctx.lineWidth = 10;
+      ctx.arc(patient.center.x, patient.center.y, 35, -Math.PI / 2 - 0.03, 0.03 -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
+      ctx.lineWidth = 9;
       ctx.strokeStyle = 'black';
       ctx.stroke();
 
       // arc
       ctx.beginPath();
-      ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = 'rgb(' + Math.round(255 - 255 * timePercentage) + ', ' + Math.round(255 * timePercentage) + ', 0)';
+      ctx.arc(patient.center.x, patient.center.y, 35, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = 'rgb(' + Math.round(255 - 200 * timePercentage) + ', ' + Math.round(200 * timePercentage) + ', 0)';
       ctx.stroke();
     });
 
@@ -180,7 +193,7 @@ BasicGame.Game.prototype = {
 
   newPatient: function() {
     var randomBlock = this.blocks.getRandom();
-    var distanceFromBlock = 30;
+    var distanceFromBlock = 25;
     var patientX = randomBlock.topLeft.x - distanceFromBlock;
     var patientY = randomBlock.topLeft.y - distanceFromBlock;
     var horizontally = this.rnd.pick([0,1]) < 0.5;
@@ -219,7 +232,7 @@ BasicGame.Game.prototype = {
   },
 
   popupText: function(x, y, text, color) {
-    var t = this.popupTexts.add(this.add.text(x, y, text, { font: "20px Arial", fill: color, align: "center" }));
+    var t = this.popupTexts.add(this.add.text(x, y, text, { font: "bold 18px Verdana", fill: color, stroke: "#000000", strokeThickness: 5 }));
     t.anchor.setTo(0.5, 0.5);
     t.alpha = 0.0;
 
@@ -245,7 +258,7 @@ BasicGame.Game.prototype = {
     var patientCount = car.patients.length;
     if (!patientCount) return;
 
-    this.popupText(car.center.x, car.center.y, patientCount + ' patient' + (patientCount > 1 ? 's' : '') + ' was saved', 'green');
+    this.popupText(car.center.x, car.center.y, patientCount + ' patient' + (patientCount > 1 ? 's' : '') + ' was saved', '#2ECC40');
     this.score += patientCount;
     this.scoreText.content = this.score + ' patient' + (patientCount > 1 ? 's' : '') + ' saved';
     while (car.patients.length > 0) {
@@ -263,7 +276,7 @@ BasicGame.Game.prototype = {
 
   patientDies: function(patient) {
     this.patientsDied++;
-    this.popupText(patient.center.x, patient.center.y, 'A patient has died!', 'red');
+    this.popupText(patient.center.x, patient.center.y, 'A patient has died!', '#FF4136');
     this.cars.forEach(function(car) {
       for (var i = 0; i < car.patients.length; i++) {
         if (car.patients[i] == patient) {
@@ -277,7 +290,10 @@ BasicGame.Game.prototype = {
 
   randomColor: function() {
     //var colorIndex = this.rnd.integerInRange(0, this.colors.length);
-    return this.removeRandom(this.colors); //this.colors.splice(colorIndex, 1)[0];
+    console.log(this.colors.length);
+    var color = this.removeRandom(this.colors); //this.colors.splice(colorIndex, 1)[0];
+    console.log(this.colors.length, color);
+    return color;
   },
 
   removeRandom: function(arr) {
