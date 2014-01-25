@@ -40,6 +40,7 @@ BasicGame.Preloader.prototype = {
     this.load.image('patient', 'assets/images/firstaid.png');
     this.load.image('hospital', 'assets/images/spinObj_02.png');
     this.load.image('block', 'assets/images/block.png');
+    this.load.image('red', 'assets/images/red.png');
   },
 
   create: function () {

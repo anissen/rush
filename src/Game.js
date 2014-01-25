@@ -3,6 +3,7 @@ BasicGame.Game = function (game) {
   this.CARS = 2;
   this.PATIENTS = 6;
   this.HOSPITALS = 1;
+  this.LIVES = 3;
   this.colors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#dddddd", "#aaaaaa"];
 
   this.maxTimeOut = 60000;
@@ -14,7 +15,6 @@ BasicGame.Game = function (game) {
 
   this.patientTimer = null;
   this.patientsDied = 0;
-  this.maxDeadPatients = 10;
 };
 
 BasicGame.Game.prototype = {
@@ -46,8 +46,8 @@ BasicGame.Game.prototype = {
       }
     }
   
-    var map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
-    map.anchor.setTo(0.5, 0.5);
+    this.map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
+    this.map.anchor.setTo(0.5, 0.5);
 
     this.hospitals = this.add.group();
     for (var h = 0; h < this.HOSPITALS; h++) {
@@ -82,19 +82,29 @@ BasicGame.Game.prototype = {
     this.scoreText = this.add.text(this.world.centerX, 16, '0 patients saved', { font: "bold 24px Verdana", fill: "#FFFFFF", stroke: "#FF4136", strokeThickness: 5 });
     this.scoreText.anchor.setTo(0.5, 0.5);
 
-    // var me = this;
-    // var imageObj = new Image();
-    // imageObj.onload = function() {
-    //   me.pattern = me.game.context.createPattern(imageObj, 'repeat');
-    // };
-    // imageObj.src = 'http://www.html5canvastutorials.com/demos/assets/wood-pattern.png';
+
+    this.liveIcons = this.add.group();
+    for (var l = 0; l < this.LIVES; l++) {
+      var lifeIcon = this.liveIcons.create(this.world.width - (100 + l * 50), 16, 'patient');
+      lifeIcon.anchor.setTo(0.5, 0.5);
+      lifeIcon.scale.setTo(0.8, 0.8);
+      this.add.tween(lifeIcon)
+        .to({ rotation: -Math.PI / 6 }, 2000, Phaser.Easing.Quadratic.InOut)
+        .to({ rotation: Math.PI / 6 }, 2000, Phaser.Easing.Quadratic.InOut)
+        .loop()
+        .start();
+    }
+
+    this.overlay = this.add.sprite(this.world.centerX, this.world.centerY, 'red');
+    this.overlay.anchor.setTo(0.5, 0.5);
+    this.overlay.scale.setTo(100, 100);
+    this.overlay.alpha = 0.0;
   },
 
   render: function() {
     var ctx = this.game.context;
 
     ctx.setLineDash([20,6]);
-
     var me = this;
     this.cars.forEach(function(car) {
       if (car.movePoints.length > 0) {
@@ -186,8 +196,9 @@ BasicGame.Game.prototype = {
       }
     });
 
-    if (this.patientsDied >= this.maxDeadPatients) {
-      this.game.state.start('MainMenu');
+    if (this.patientsDied >= this.LIVES) {
+      //this.game.state.start('MainMenu');
+      console.log('should go to score screen');
     }
   },
 
@@ -260,7 +271,7 @@ BasicGame.Game.prototype = {
 
     this.popupText(car.center.x, car.center.y, patientCount + ' patient' + (patientCount > 1 ? 's' : '') + ' was saved', '#2ECC40');
     this.score += patientCount;
-    this.scoreText.content = this.score + ' patient' + (patientCount > 1 ? 's' : '') + ' saved';
+    this.scoreText.content = this.score + ' patient' + (this.score > 1 ? 's' : '') + ' saved';
     while (car.patients.length > 0) {
       var patient = car.patients[0];
       patient.countTween.stop();
@@ -286,14 +297,17 @@ BasicGame.Game.prototype = {
       }
     });
     patient.destroy();
+
+    this.add.tween(this.overlay)
+      .to({ alpha: 0.9 }, 50, Phaser.Easing.Cubic.InOut)
+      .to({ alpha: 0 }, 1000, Phaser.Easing.Cubic.InOut)
+      .start();
+
+    this.liveIcons.getFirstAlive().destroy();
   },
 
   randomColor: function() {
-    //var colorIndex = this.rnd.integerInRange(0, this.colors.length);
-    console.log(this.colors.length);
-    var color = this.removeRandom(this.colors); //this.colors.splice(colorIndex, 1)[0];
-    console.log(this.colors.length, color);
-    return color;
+    return this.removeRandom(this.colors);
   },
 
   removeRandom: function(arr) {
