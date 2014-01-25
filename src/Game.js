@@ -134,8 +134,8 @@ BasicGame.Game.prototype = {
         ctx.strokeStyle = car.color;
         ctx.beginPath();
         ctx.moveTo(car.movePoints[lastIndex].x, car.movePoints[lastIndex].y);
-        for (var i = lastIndex - 1; i >= 0; i--) {
-          ctx.lineTo(car.movePoints[i].x, car.movePoints[i].y);
+        for (var j = lastIndex - 1; j >= 0; j--) {
+          ctx.lineTo(car.movePoints[j].x, car.movePoints[j].y);
         }
         ctx.stroke();
         ctx.closePath();
@@ -254,22 +254,7 @@ BasicGame.Game.prototype = {
     //  Position the emitter where the mouse/touch event was
     this.emitter.emitX = car.x;
     this.emitter.emitY = car.y;
-    //this.emitter.alpha = 0.5;
-
-    // var angle = this.physics.angleBetween(car, block);
-    //this.emitter.angle = this.physics.angleBetween(car, block) - Math.PI / 2;
-    // this.emitter.particleDrag.x = 10.0;
-    // this.emitter.setXSpeed(Math.cos(this.emitter.angle) * 100, Math.cos(this.emitter.angle) * 500);
-    // this.emitter.setYSpeed(Math.sin(this.emitter.angle) * 100, Math.sin(this.emitter.angle) * 500);
-    // this.emitter.setXSpeed(0, 0);
-    // this.emitter.setYSpeed(0, 0);
-
-    //  The first parameter sets the effect to "explode" which means all particles are emitted at once
-    //  The second gives each particle a 2000ms lifespan
-    //  The third is ignored when using burst/explode mode
-    //  The final parameter (10) is how many particles will be emitted in this single burst
     this.emitter.start(true, 500, null, 1);
-
   },
 
   quitGame: function (pointer) {
@@ -307,7 +292,7 @@ BasicGame.Game.prototype = {
     var patientCount = car.patients.length;
     if (!patientCount) return;
 
-    this.popupText(car.center.x, car.center.y, patientCount + ' patient' + (patientCount > 1 ? 's' : '') + ' was saved', '#2ECC40');
+    this.popupText(car.center.x, car.center.y, patientCount + ' patient' + (patientCount > 1 ? 's' : '') + ' saved', '#2ECC40');
     this.score += patientCount;
     this.scoreText.content = this.score + ' patient' + (this.score > 1 ? 's' : '') + ' saved';
     while (car.patients.length > 0) {
@@ -341,7 +326,9 @@ BasicGame.Game.prototype = {
       .to({ alpha: 0 }, 1000, Phaser.Easing.Cubic.InOut)
       .start();
 
-    this.liveIcons.getFirstAlive().destroy();
+    var lifeIcon = this.liveIcons.getFirstAlive();
+    if (lifeIcon)
+      lifeIcon.destroy();
   },
 
   randomColor: function() {
