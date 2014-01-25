@@ -22,7 +22,7 @@ BasicGame.Boot.prototype = {
 
   create: function () {
     this.game.input.maxPointers = 2;
-    this.game.stage.disableVisibilityChange = true;
+    this.game.stage.disableVisibilityChange = false;
 
     if (this.game.device.desktop) {
       this.game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;

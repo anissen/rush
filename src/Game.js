@@ -3,6 +3,7 @@ BasicGame.Game = function (game) {
   this.CARS = 2;
   this.PATIENTS = 6;
   this.HOSPITALS = 1;
+  this.colors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#ffffff", "#dddddd", "#aaaaaa"];
 
   this.maxTimeOut = 60000;
 
@@ -12,6 +13,8 @@ BasicGame.Game = function (game) {
   this.carDraggedByPointerId = [];
 
   this.patientTimer = null;
+  this.patientsDied = 0;
+  this.maxDeadPatients = 10;
 };
 
 BasicGame.Game.prototype = {
@@ -21,18 +24,37 @@ BasicGame.Game.prototype = {
     // For browsers that support it, this keeps our pixel art looking crisp
     // This only works when you use Phaser.CANVAS as the renderer
     Phaser.Canvas.setSmoothingEnabled(this.game.context, false);
+    console.log(this.game);
+    this.game.onPause.add(function() {
+      console.log('game paused');
+    });
+
+    this.blocks = this.add.group();
+    for (var y = 0; y < 2; y++) {
+      for (var x = 0; x < 3; x++) {
+        var block;
+        if (y === 1 && x === 1) {
+          block = this.blocks.create(195 + 315 * x, 225 + 315 * y + 40, 'block');
+          block.scale.setTo(12, 7);
+        } else {
+          block = this.blocks.create(195 + 315 * x, 225 + 315 * y, 'block');
+          block.scale.setTo(12, 12);
+        }
+        block.anchor.setTo(0.5, 0.5);
+        block.visible = true;
+        block.body.immovable = true;
+      }
+    }
   
-    /*
     var map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
     map.anchor.setTo(0.5, 0.5);
-    map.scale.setTo(50, 50);
-    */
 
     this.hospitals = this.add.group();
     for (var h = 0; h < this.HOSPITALS; h++) {
-      var hospital = this.hospitals.create(this.world.centerX, this.world.centerY, 'hospital');
+      var hospital = this.hospitals.create(this.world.centerX, this.world.centerY * 1.4, 'hospital');
       hospital.anchor.setTo(0.5, 0.5);
       hospital.scale.setTo(0.8, 0.8);
+      hospital.visible = false;
       hospital.inputEnabled = true;
     }
 
@@ -43,7 +65,7 @@ BasicGame.Game.prototype = {
     for (var c = 0; c < this.CARS; c++) {
       var car = this.cars.create(this.world.centerX, this.world.centerY, 'car');
       car.anchor.setTo(0.5, 0.5);
-      car.scale.setTo(2, 2);
+      car.scale.setTo(0.8, 0.8);
       car.inputEnabled = true;
       car.input.enableDrag(false, true);
       car.input.setDragLock(false, false);
@@ -55,53 +77,53 @@ BasicGame.Game.prototype = {
       car.patients = [];
     }
 
-    this.blocks = this.add.group();
-    for (var y = 0; y < 2; y++) {
-      for (var x = 0; x < 3; x++) {
-        var block = this.blocks.create(200 + 300 * x, 200 + 350 * y, 'block');
-        block.anchor.setTo(0.5, 0.5);
-        block.scale.setTo(11, 11);
-        block.body.immovable = true;
-      }
-    }
-
     this.popupTexts = this.add.group();
 
     this.scoreText = this.add.text(16, 16, '0 patients saved', { font: "32pt Courier", fill: "#ee0000", stroke: "#ffffff", strokeThickness: 2 });
+
+    var me = this;
+    var imageObj = new Image();
+    imageObj.onload = function() {
+      me.pattern = me.game.context.createPattern(imageObj, 'repeat');
+    };
+    imageObj.src = 'http://www.html5canvastutorials.com/demos/assets/wood-pattern.png';
   },
 
   render: function() {
     var ctx = this.game.context;
 
+    var me = this;
     this.cars.forEach(function(car) {
       if (car.movePoints.length > 0) {
         ctx.lineWidth = 4;
         ctx.strokeStyle = car.color;
+        //ctx.fillStyle = me.pattern;
         ctx.beginPath();
         ctx.moveTo(car.center.x, car.center.y);
         for (var i = 0; i < car.movePoints.length; i++) {
           ctx.lineTo(car.movePoints[i].x, car.movePoints[i].y);
         }
         ctx.stroke();
+        //ctx.fill();
+
         ctx.closePath();
       }
     });
 
-    var me = this;
     this.patients.forEach(function(patient) {
       var timePercentage = (patient.countDown / me.maxTimeOut);
 
       // black stroke
       ctx.beginPath();
       ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2 - 0.03, 0.03 -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
-      ctx.lineWidth = 8;
+      ctx.lineWidth = 10;
       ctx.strokeStyle = 'black';
       ctx.stroke();
 
       // arc
       ctx.beginPath();
       ctx.arc(patient.center.x, patient.center.y, 30, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 8;
       ctx.strokeStyle = 'rgb(' + Math.round(255 - 255 * timePercentage) + ', ' + Math.round(255 * timePercentage) + ', 0)';
       ctx.stroke();
     });
@@ -150,6 +172,10 @@ BasicGame.Game.prototype = {
         car.body.velocity.y = 0;
       }
     });
+
+    if (this.patientsDied >= this.maxDeadPatients) {
+      this.game.state.start('MainMenu');
+    }
   },
 
   newPatient: function() {
@@ -236,6 +262,7 @@ BasicGame.Game.prototype = {
   },
 
   patientDies: function(patient) {
+    this.patientsDied++;
     this.popupText(patient.center.x, patient.center.y, 'A patient has died!', 'red');
     this.cars.forEach(function(car) {
       for (var i = 0; i < car.patients.length; i++) {
@@ -249,8 +276,12 @@ BasicGame.Game.prototype = {
   },
 
   randomColor: function() {
-    var hexColors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#ffffff", "#dddddd", "#aaaaaa"]; // , "#111111" <- black
-    return this.rnd.pick(hexColors);
+    //var colorIndex = this.rnd.integerInRange(0, this.colors.length);
+    return this.removeRandom(this.colors); //this.colors.splice(colorIndex, 1)[0];
+  },
+
+  removeRandom: function(arr) {
+    return arr.splice(this.rnd.integerInRange(0, arr.length), 1)[0];
   },
 
   startDragCar: function(car) {

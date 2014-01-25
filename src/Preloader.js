@@ -35,8 +35,8 @@ BasicGame.Preloader.prototype = {
     loadingText = this.add.text(512, 570, 'Loading', { font: "30pt Courier", fill: "#ee0000", stroke: "#ffffff", strokeThickness: 5, align: 'center' });
     loadingText.anchor.setTo(0.5, 0.5);
 
-    this.load.image('map', 'assets/images/map2.png');
-    this.load.image('car', 'assets/images/car.png');
+    this.load.image('map', 'assets/images/bigmap.jpg');
+    this.load.image('car', 'assets/images/ambulance.png');
     this.load.image('patient', 'assets/images/firstaid.png');
     this.load.image('hospital', 'assets/images/spinObj_02.png');
     this.load.image('block', 'assets/images/block.png');
@@ -45,6 +45,7 @@ BasicGame.Preloader.prototype = {
   create: function () {
     //  Once the load has finished we disable the crop because we're going to sit in the update loop for a short while as the music decodes
     this.preloadBar.cropEnabled = false;
+
     this.game.state.start('Game');
   },
 
