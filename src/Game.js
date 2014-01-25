@@ -34,29 +34,29 @@ BasicGame.Game.prototype = {
       for (var x = 0; x < 3; x++) {
         var block;
         if (y === 1 && x === 1) {
-          block = this.blocks.create(195 + 315 * x, 225 + 315 * y + 40, 'block');
-          block.scale.setTo(12, 7);
+          block = this.blocks.create(198 + 314 * x, 228 + 314 * y + 40, 'block');
+          block.scale.setTo(11, 6);
         } else {
-          block = this.blocks.create(195 + 315 * x, 225 + 315 * y, 'block');
-          block.scale.setTo(12, 12);
+          block = this.blocks.create(198 + 314 * x, 228 + 314 * y, 'block');
+          block.scale.setTo(11, 11);
         }
         block.anchor.setTo(0.5, 0.5);
         block.visible = true;
         block.body.immovable = true;
       }
     }
-  
-    this.map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
-    this.map.anchor.setTo(0.5, 0.5);
 
     this.hospitals = this.add.group();
     for (var h = 0; h < this.HOSPITALS; h++) {
       var hospital = this.hospitals.create(this.world.centerX, this.world.centerY * 1.4, 'hospital');
       hospital.anchor.setTo(0.5, 0.5);
       hospital.scale.setTo(0.8, 0.8);
-      hospital.visible = false;
+      // hospital.visible = false;
       hospital.inputEnabled = true;
     }
+
+    this.map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
+    this.map.anchor.setTo(0.5, 0.5);
 
     this.patients = this.add.group();
     this.patientTimer = this.time.events.loop(Phaser.Timer.SECOND * 3, this.newPatient, this);
@@ -94,6 +94,17 @@ BasicGame.Game.prototype = {
         .loop()
         .start();
     }
+
+    this.emitter = this.add.emitter(this.world.centerX, this.world.centerY, 250);
+
+    this.emitter.makeParticles('spark');
+    // this.emitter.minParticleSpeed.setTo(-200, -300);
+    // this.emitter.maxParticleSpeed.setTo(200, -400);
+    // this.emitter.gravity = 8;
+    // this.emitter.bounce.setTo(0.5, 0.5);
+    // this.emitter.scale.setTo(0.2, 0.4);
+    // this.emitter.particleDrag.x = 10;
+    // this.emitter.angularDrag = 30;
 
     this.overlay = this.add.sprite(this.world.centerX, this.world.centerY, 'red');
     this.overlay.anchor.setTo(0.5, 0.5);
@@ -186,7 +197,7 @@ BasicGame.Game.prototype = {
         var SPEED = 250;
         me.physics.overlap(car, me.patients, me.carArrivedAtPatient, null, me);
         me.physics.overlap(car, me.hospitals, me.carArrivedAtHospital, null, me);
-        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 100; }, null, me);
+        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 100; this.hitBlock(car, block); }, null, me);
 
         me.physics.moveToXY(car, nextPoint.x, nextPoint.y, SPEED);
         car.rotation = me.physics.angleBetween(car, nextPoint) + Math.PI / 2;
@@ -195,6 +206,8 @@ BasicGame.Game.prototype = {
         car.body.velocity.y = 0;
       }
     });
+
+    this.physics.collide(this.emitter, this.blocks);
 
     if (this.patientsDied >= this.LIVES) {
       //this.game.state.start('MainMenu');
@@ -232,6 +245,31 @@ BasicGame.Game.prototype = {
       .to({ rotation: Math.PI / 6 }, 1000, Phaser.Easing.Quadratic.InOut)
       .loop()
       .start();
+
+    var texts = ['Help!', '911!', 'Hurry!', 'Need assistance!', 'To the hospital!', 'Help me!', 'Send help!'];
+    this.popupText(patient.x, patient.y - 30, this.rnd.pick(texts), '#FF851B');
+  },
+
+  hitBlock: function(car, block) {
+    //  Position the emitter where the mouse/touch event was
+    this.emitter.emitX = car.x;
+    this.emitter.emitY = car.y;
+    //this.emitter.alpha = 0.5;
+
+    // var angle = this.physics.angleBetween(car, block);
+    //this.emitter.angle = this.physics.angleBetween(car, block) - Math.PI / 2;
+    // this.emitter.particleDrag.x = 10.0;
+    // this.emitter.setXSpeed(Math.cos(this.emitter.angle) * 100, Math.cos(this.emitter.angle) * 500);
+    // this.emitter.setYSpeed(Math.sin(this.emitter.angle) * 100, Math.sin(this.emitter.angle) * 500);
+    // this.emitter.setXSpeed(0, 0);
+    // this.emitter.setYSpeed(0, 0);
+
+    //  The first parameter sets the effect to "explode" which means all particles are emitted at once
+    //  The second gives each particle a 2000ms lifespan
+    //  The third is ignored when using burst/explode mode
+    //  The final parameter (10) is how many particles will be emitted in this single burst
+    this.emitter.start(true, 500, null, 1);
+
   },
 
   quitGame: function (pointer) {

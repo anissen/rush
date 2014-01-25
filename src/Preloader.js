@@ -41,6 +41,9 @@ BasicGame.Preloader.prototype = {
     this.load.image('hospital', 'assets/images/spinObj_02.png');
     this.load.image('block', 'assets/images/block.png');
     this.load.image('red', 'assets/images/red.png');
+
+    this.load.spritesheet('veggies', 'assets/images/fruitnveg64wh37.png', 64, 64);
+    this.load.image('spark', 'assets/images/spark.png');
   },
 
   create: function () {
