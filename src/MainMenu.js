@@ -6,7 +6,6 @@ BasicGame.MainMenu = function (game) {
 BasicGame.MainMenu.prototype = {
   create: function () {
     this.add.sprite(0, 0, 'titlepage');
-    console.log(BasicGame.score);
     if (BasicGame.score) {
       var scoreText = this.add.text(512, 350, 'Game over!\n\nYou rescued ' + BasicGame.score + ' patient' + (BasicGame.score > 1 ? 's' : ''), { font: "bold 32px Verdana", fill: "#FF4136", stroke: "#FFFFFF", strokeThickness: 3 });
       scoreText.anchor.setTo(0.5, 0.5);

@@ -1,19 +1,21 @@
 
 BasicGame.Game = function (game) {
-  this.CARS = 2;
-  this.PATIENTS = 6;
-  this.HOSPITALS = 1;
-  this.LIVES = 1;
+  this.LIVES = 3;
+
   this.colors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#dddddd", "#aaaaaa"];
 
-  this.maxTimeOut = 60000;
+  this.minCountDown = 5000;
+  this.maxCountDown = 60000;
 
-  this.carDraggedByPointerId = [];
+  this.minNextPatient = 1000;
+  this.maxNextPatient = 5000;
 };
 
 BasicGame.Game.prototype = {
   create: function () {
     BasicGame.score = 0;
+    this.patientsSpawned = 0;
+    this.carDraggedByPointerId = [];
 
     // For browsers that support it, this keeps our pixel art looking crisp
     // This only works when you use Phaser.CANVAS as the renderer
@@ -41,34 +43,18 @@ BasicGame.Game.prototype = {
     }
 
     this.hospitals = this.add.group();
-    for (var h = 0; h < this.HOSPITALS; h++) {
-      var hospital = this.hospitals.create(this.world.centerX, this.world.centerY * 1.4, 'hospital');
-      hospital.anchor.setTo(0.5, 0.5);
-      hospital.scale.setTo(0.8, 0.8);
-      hospital.inputEnabled = true;
-    }
+    var hospital = this.hospitals.create(this.world.centerX, this.world.centerY * 1.4, 'hospital');
+    hospital.anchor.setTo(0.5, 0.5);
+    hospital.scale.setTo(0.8, 0.8);
 
     this.map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
     this.map.anchor.setTo(0.5, 0.5);
 
     this.patients = this.add.group();
-    this.time.events.loop(Phaser.Timer.SECOND * 3, this.newPatient, this);
+    this.time.events.create(Phaser.Timer.SECOND * 3, false, 0, this.newPatient, this);
 
     this.cars = this.add.group();
-    for (var c = 0; c < this.CARS; c++) {
-      var car = this.cars.create(this.world.centerX, this.world.centerY, 'car');
-      car.anchor.setTo(0.5, 0.5);
-      car.scale.setTo(0.8, 0.8);
-      car.inputEnabled = true;
-      car.input.enableDrag(false, true);
-      car.input.setDragLock(false, false);
-      car.events.onDragStart.add(this.startDragCar, this);
-      car.events.onDragStop.add(this.endDragCar, this);
-      car.color = this.randomColor();
-      car.dragging = false;
-      car.movePoints = [];
-      car.patients = [];
-    }
+    this.addCar();
 
     this.popupTexts = this.add.group();
 
@@ -129,7 +115,7 @@ BasicGame.Game.prototype = {
     ctx.setLineDash([]);
 
     this.patients.forEach(function(patient) {
-      var timePercentage = (patient.countDown / me.maxTimeOut);
+      var timePercentage = (patient.countDown / me.maxCountDown);
 
       // black stroke
       ctx.beginPath();
@@ -196,7 +182,23 @@ BasicGame.Game.prototype = {
     }
   },
 
+  addCar: function() {
+    var car = this.cars.create(this.world.centerX, this.world.centerY + 80, 'car');
+    car.anchor.setTo(0.5, 0.5);
+    car.scale.setTo(0.8, 0.8);
+    car.inputEnabled = true;
+    car.input.enableDrag(false, true);
+    car.input.setDragLock(false, false);
+    car.events.onDragStart.add(this.startDragCar, this);
+    car.events.onDragStop.add(this.endDragCar, this);
+    car.color = this.randomColor();
+    car.dragging = false;
+    car.movePoints = [];
+    car.patients = [];
+  },
+
   newPatient: function() {
+    this.patientsSpawned++;
     var randomBlock = this.blocks.getRandom();
     var distanceFromBlock = 25;
     var patientX = randomBlock.topLeft.x - distanceFromBlock;
@@ -212,9 +214,9 @@ BasicGame.Game.prototype = {
 
     var patient = this.patients.create(patientX, patientY, 'patient');
     patient.anchor.setTo(0.5, 0.5);
-    patient.inputEnabled = true;
 
-    patient.countDown = this.rnd.realInRange(this.maxTimeOut / 5, this.maxTimeOut);
+    var minCountDown = Math.max(this.minCountDown, this.maxCountDown - this.patientsSpawned * 1000);
+    patient.countDown = this.rnd.realInRange(minCountDown, this.maxCountDown);
     patient.countTween = this.add.tween(patient);
     patient.countTween.onComplete.add(this.patientDies, this);
     patient.countTween.to({ countDown: 0 }, patient.countDown, Phaser.Easing.Quadratic.Out, true);
@@ -230,6 +232,21 @@ BasicGame.Game.prototype = {
 
     var texts = ['Help!', '911!', 'Hurry!', 'Need assistance!', 'To the hospital!', 'Help me!', 'Send help!', 'I need help!'];
     this.popupText(patient.x, patient.y - 30, this.rnd.pick(texts), '#FF851B');
+
+    if (this.patientsSpawned % 20 === 0 && this.cars.countLiving() < 5) {
+      this.addCar();
+    }
+
+    var timeToNextPatient = Math.max(this.minNextPatient, this.maxNextPatient - this.patientsSpawned * 100);
+    console.log('timeToNextPatient',timeToNextPatient);
+    this.time.events.create(timeToNextPatient, false, 0, this.newPatient, this);
+
+    // NOTES:
+
+    -> two hospitals - one at each end
+    -> make ambulances easier to control
+    -> make the pick-up range on patients larger
+    -> quitting game does not work on ipad
   },
 
   quitGame: function() {
