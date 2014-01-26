@@ -22,20 +22,6 @@ BasicGame.HowToPlay.prototype = {
 
 		var txt = this.add.text(x, y, text, { font: "bold 32px Verdana", fill: "#FF4136", stroke: "#FFFFFF", strokeThickness: 3 });
     txt.anchor.setTo(0.5, 0.5);
-
-    /*
-    this.add.tween(btn)
-      .to({ rotation: -Math.PI / 100, y: y + 5 }, 2000, Phaser.Easing.Quadratic.InOut)
-      .to({ rotation: Math.PI / 100, y: y - 5 }, 2000, Phaser.Easing.Quadratic.InOut)
-      .loop()
-      .start();
-
-    this.add.tween(txt)
-      .to({ rotation: -Math.PI / 100, y: y + 5 }, 2000, Phaser.Easing.Quadratic.InOut)
-      .to({ rotation: Math.PI / 100, y: y - 5 }, 2000, Phaser.Easing.Quadratic.InOut)
-      .loop()
-      .start();
-    */
 	},
 
 	update: function() {

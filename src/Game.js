@@ -3,27 +3,24 @@ BasicGame.Game = function (game) {
   this.CARS = 2;
   this.PATIENTS = 6;
   this.HOSPITALS = 1;
-  this.LIVES = 3;
+  this.LIVES = 1;
   this.colors = ["#7FDBFF", "#0074D9", "#001F3F", "#39CCCC", "#2ECC40", "#3D9970", "#01FF70", "#FFDC00", "#FF851B", "#FF4136", "#F012BE", "#B10DC9", "#85144B", "#dddddd", "#aaaaaa"];
 
   this.maxTimeOut = 60000;
 
-  this.score = 0;
-
   this.carDraggedByPointerId = [];
-
-  this.patientTimer = null;
-  this.patientsDied = 0;
 };
 
 BasicGame.Game.prototype = {
   create: function () {
+    BasicGame.score = 0;
+
     // For browsers that support it, this keeps our pixel art looking crisp
     // This only works when you use Phaser.CANVAS as the renderer
     Phaser.Canvas.setSmoothingEnabled(this.game.context, false);
 
     this.game.onPause.add(function() {
-      console.log('game paused');
+
     });
 
     this.blocks = this.add.group();
@@ -55,7 +52,7 @@ BasicGame.Game.prototype = {
     this.map.anchor.setTo(0.5, 0.5);
 
     this.patients = this.add.group();
-    this.patientTimer = this.time.events.loop(Phaser.Timer.SECOND * 3, this.newPatient, this);
+    this.time.events.loop(Phaser.Timer.SECOND * 3, this.newPatient, this);
 
     this.cars = this.add.group();
     for (var c = 0; c < this.CARS; c++) {
@@ -75,7 +72,7 @@ BasicGame.Game.prototype = {
 
     this.popupTexts = this.add.group();
 
-    this.scoreText = this.add.text(this.world.centerX, 16, '0 patients saved', { font: "bold 24px Verdana", fill: "#FFFFFF", stroke: "#FF4136", strokeThickness: 5 });
+    this.scoreText = this.add.text(this.world.centerX, 16, '0 patients rescued', { font: "bold 24px Verdana", fill: "#FFFFFF", stroke: "#FF4136", strokeThickness: 5 });
     this.scoreText.anchor.setTo(0.5, 0.5);
 
 
@@ -95,6 +92,8 @@ BasicGame.Game.prototype = {
     this.overlay.anchor.setTo(0.5, 0.5);
     this.overlay.scale.setTo(100, 100);
     this.overlay.alpha = 0.0;
+
+    this.time.events.start();
   },
 
   render: function() {
@@ -182,7 +181,7 @@ BasicGame.Game.prototype = {
         var SPEED = 250;
         me.physics.overlap(car, me.patients, me.carArrivedAtPatient, null, me);
         me.physics.overlap(car, me.hospitals, me.carArrivedAtHospital, null, me);
-        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 100; }, null, me);
+        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 50; }, null, me);
 
         me.physics.moveToXY(car, nextPoint.x, nextPoint.y, SPEED);
         car.rotation = me.physics.angleBetween(car, nextPoint) + Math.PI / 2;
@@ -192,9 +191,8 @@ BasicGame.Game.prototype = {
       }
     });
 
-    if (this.patientsDied >= this.LIVES) {
-      //this.game.state.start('MainMenu');
-      console.log('should go to score screen');
+    if (this.liveIcons.countLiving() <= 0) {
+      this.quitGame();
     }
   },
 
@@ -221,7 +219,8 @@ BasicGame.Game.prototype = {
     patient.countTween.onComplete.add(this.patientDies, this);
     patient.countTween.to({ countDown: 0 }, patient.countDown, Phaser.Easing.Quadratic.Out, true);
 
-    this.patients.sort('countDown', Phaser.Group.SORT_DESCENDING);
+    if (this.patients.length > 0)
+      this.patients.sort('countDown', Phaser.Group.SORT_DESCENDING);
 
     this.add.tween(patient)
       .to({ rotation: -Math.PI / 6 }, 1000, Phaser.Easing.Quadratic.InOut)
@@ -229,12 +228,21 @@ BasicGame.Game.prototype = {
       .loop()
       .start();
 
-    var texts = ['Help!', '911!', 'Hurry!', 'Need assistance!', 'To the hospital!', 'Help me!', 'Send help!'];
+    var texts = ['Help!', '911!', 'Hurry!', 'Need assistance!', 'To the hospital!', 'Help me!', 'Send help!', 'I need help!'];
     this.popupText(patient.x, patient.y - 30, this.rnd.pick(texts), '#FF851B');
   },
 
-  quitGame: function (pointer) {
+  quitGame: function() {
     //  Stop music, delete sprites, purge caches, free resources, all that good stuff.
+    this.tweens.removeAll();
+    this.time.events.stop();
+    this.blocks.destroy();
+    this.hospitals.destroy();
+    this.patients.destroy();
+    this.cars.destroy();
+    this.liveIcons.destroy();
+    this.carDraggedByPointerId.length = 0;
+
     this.game.state.start('MainMenu');
   },
 
@@ -265,9 +273,9 @@ BasicGame.Game.prototype = {
     var patientCount = car.patients.length;
     if (!patientCount) return;
 
-    this.popupText(car.center.x, car.center.y, patientCount + ' patient' + (patientCount > 1 ? 's' : '') + ' saved', '#2ECC40');
-    this.score += patientCount;
-    this.scoreText.content = this.score + ' patient' + (this.score > 1 ? 's' : '') + ' saved';
+    this.popupText(car.center.x, car.center.y, patientCount + ' patient' + (patientCount > 1 ? 's' : '') + ' rescued', '#2ECC40');
+    BasicGame.score += patientCount;
+    this.scoreText.content = BasicGame.score + ' patient' + (BasicGame.score > 1 ? 's' : '') + ' rescued';
     while (car.patients.length > 0) {
       var patient = car.patients[0];
       patient.countTween.stop();
@@ -282,7 +290,6 @@ BasicGame.Game.prototype = {
   },
 
   patientDies: function(patient) {
-    this.patientsDied++;
     this.popupText(patient.center.x, patient.center.y, 'A patient has died!', '#FF4136');
     this.cars.forEach(function(car) {
       for (var i = 0; i < car.patients.length; i++) {
@@ -300,8 +307,9 @@ BasicGame.Game.prototype = {
       .start();
 
     var lifeIcon = this.liveIcons.getFirstAlive();
-    if (lifeIcon)
+    if (lifeIcon) {
       lifeIcon.destroy();
+    }
   },
 
   randomColor: function() {
