@@ -9,7 +9,6 @@ BasicGame.Game = function (game) {
   this.maxTimeOut = 60000;
 
   this.score = 0;
-  this.tileSize = 50;
 
   this.carDraggedByPointerId = [];
 
@@ -19,8 +18,6 @@ BasicGame.Game = function (game) {
 
 BasicGame.Game.prototype = {
   create: function () {
-    //this.world.setBounds(0, 0, this.game.width, this.game.height);
-
     // For browsers that support it, this keeps our pixel art looking crisp
     // This only works when you use Phaser.CANVAS as the renderer
     Phaser.Canvas.setSmoothingEnabled(this.game.context, false);
@@ -51,7 +48,6 @@ BasicGame.Game.prototype = {
       var hospital = this.hospitals.create(this.world.centerX, this.world.centerY * 1.4, 'hospital');
       hospital.anchor.setTo(0.5, 0.5);
       hospital.scale.setTo(0.8, 0.8);
-      // hospital.visible = false;
       hospital.inputEnabled = true;
     }
 
@@ -94,17 +90,6 @@ BasicGame.Game.prototype = {
         .loop()
         .start();
     }
-
-    this.emitter = this.add.emitter(this.world.centerX, this.world.centerY, 250);
-
-    this.emitter.makeParticles('spark');
-    // this.emitter.minParticleSpeed.setTo(-200, -300);
-    // this.emitter.maxParticleSpeed.setTo(200, -400);
-    // this.emitter.gravity = 8;
-    // this.emitter.bounce.setTo(0.5, 0.5);
-    // this.emitter.scale.setTo(0.2, 0.4);
-    // this.emitter.particleDrag.x = 10;
-    // this.emitter.angularDrag = 30;
 
     this.overlay = this.add.sprite(this.world.centerX, this.world.centerY, 'red');
     this.overlay.anchor.setTo(0.5, 0.5);
@@ -197,7 +182,7 @@ BasicGame.Game.prototype = {
         var SPEED = 250;
         me.physics.overlap(car, me.patients, me.carArrivedAtPatient, null, me);
         me.physics.overlap(car, me.hospitals, me.carArrivedAtHospital, null, me);
-        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 100; this.hitBlock(car, block); }, null, me);
+        me.physics.overlap(car, me.blocks, function(car, block) { SPEED = 100; }, null, me);
 
         me.physics.moveToXY(car, nextPoint.x, nextPoint.y, SPEED);
         car.rotation = me.physics.angleBetween(car, nextPoint) + Math.PI / 2;
@@ -206,8 +191,6 @@ BasicGame.Game.prototype = {
         car.body.velocity.y = 0;
       }
     });
-
-    this.physics.collide(this.emitter, this.blocks);
 
     if (this.patientsDied >= this.LIVES) {
       //this.game.state.start('MainMenu');
@@ -250,18 +233,8 @@ BasicGame.Game.prototype = {
     this.popupText(patient.x, patient.y - 30, this.rnd.pick(texts), '#FF851B');
   },
 
-  hitBlock: function(car, block) {
-    //  Position the emitter where the mouse/touch event was
-    this.emitter.emitX = car.x;
-    this.emitter.emitY = car.y;
-    this.emitter.start(true, 500, null, 1);
-  },
-
   quitGame: function (pointer) {
-    //  Here you should destroy anything you no longer need.
     //  Stop music, delete sprites, purge caches, free resources, all that good stuff.
-
-    //  Then let's go back to the main menu.
     this.game.state.start('MainMenu');
   },
 
