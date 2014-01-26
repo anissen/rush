@@ -1,14 +1,18 @@
 
-BasicGame.MainMenu = function (game) {
-	this.playButton = null;
+BasicGame.HowToPlay = function (game) {
+	// this.playButton = null;
 };
 
-BasicGame.MainMenu.prototype = {
+BasicGame.HowToPlay.prototype = {
 	create: function () {
 		this.add.sprite(0, 0, 'titlepage');
 
-		this.addButton(512, 520, 'How To Play', this.howToPlay);
-		this.addButton(512, 650, 'Play', this.startGame);
+    var text = 'Rescue as many patients as possible!\n______________________________\n\nControls:\n• Drag ambulance to patients to pick them up\n• Drag ambulance to the hospital to drop patients off\n\nTips:\n• A patient dies when the timer runs out\n• Avoid buildings as they slow you down';
+
+    var howToText = this.add.text(512, 400, text, { font: "bold 24px Verdana", fill: "#FF4136", stroke: "black", strokeThickness: 3 });
+    howToText.anchor.setTo(0.5, 0.5);
+
+		this.addButton(512, 650, 'Back', this.toMainMenu);
 	},
 
 	addButton: function(x, y, text, callback) {
@@ -34,15 +38,11 @@ BasicGame.MainMenu.prototype = {
     */
 	},
 
-	update: function () {
+	update: function() {
 		//	Do some nice funky main menu effect here
 	},
 
-	howToPlay: function() {
-		this.game.state.start('HowToPlay');
-	},
-
-	startGame: function() {
-		this.game.state.start('Game');
+	toMainMenu: function() {
+		this.game.state.start('MainMenu');
 	}
 };
