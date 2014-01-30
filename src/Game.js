@@ -26,41 +26,59 @@ BasicGame.Game.prototype = {
     });
 
     this.blocks = this.add.group();
+    this.appartmentBlocks = [];
     for (var y = 0; y < 2; y++) {
       for (var x = 0; x < 3; x++) {
         var block;
-        if (y === 1 && x === 1) {
+        if (BasicGame.level === 0 && y === 1 && x === 1) {
           block = this.blocks.create(198 + 314 * x, 228 + 314 * y + 40, 'block');
           block.scale.setTo(11, 6);
+        } else if (BasicGame.level === 1 && y === 0 && x === 2) {
+          block = this.blocks.create(198 + 314 * x, 228 + 314 * y - 40, 'block');
+          block.scale.setTo(11, 6);
+        } else if (BasicGame.level === 1 && y === 1 && x === 0) {
+          block = this.blocks.create(198 + 314 * x - 40, 228 + 314 * y, 'block');
+          block.scale.setTo(6, 11);
         } else {
           block = this.blocks.create(198 + 314 * x, 228 + 314 * y, 'block');
           block.scale.setTo(11, 11);
+          this.appartmentBlocks.push(block);
         }
         block.anchor.setTo(0.5, 0.5);
         block.visible = true;
+        //block.body.setSize(block.body.width - 20, block.body.height - 20, 10, 10); // x, y, offsetX, offsetY
+
         block.body.immovable = true;
       }
     }
 
     this.hospitals = this.add.group();
-    var hospital = this.hospitals.create(this.world.centerX, this.world.centerY * 1.4, 'hospital');
-    hospital.anchor.setTo(0.5, 0.5);
-    hospital.scale.setTo(0.8, 0.8);
+    if (BasicGame.level === 0) {
+      var hospital = this.hospitals.create(this.world.centerX, this.world.centerY * 1.4, 'hospital');
+      hospital.anchor.setTo(0.5, 0.5);
+      hospital.scale.setTo(0.8, 0.8);
+    } else {
+      var hospital1 = this.hospitals.create(this.world.centerX * 0.45, this.world.centerY * 1.4, 'hospital');
+      hospital1.anchor.setTo(0.5, 0.5);
+      hospital1.scale.setTo(0.8, 0.8);
 
-    this.map = this.add.sprite(this.world.centerX, this.world.centerY, 'map');
+      var hospital2 = this.hospitals.create(this.world.centerX * 1.60, this.world.centerY * 0.68, 'hospital');
+      hospital2.anchor.setTo(0.5, 0.5);
+      hospital2.scale.setTo(0.8, 0.8);
+    }
+
+    this.map = this.add.sprite(this.world.centerX, this.world.centerY, (BasicGame.level === 0 ? 'map' : 'map2'));
     this.map.anchor.setTo(0.5, 0.5);
 
     this.patients = this.add.group();
-    this.time.events.create(Phaser.Timer.SECOND * 3, false, 0, this.newPatient, this);
+    this.time.events.create(2000, false, 0, this.newPatient, this);
 
     this.cars = this.add.group();
-    this.addCar();
 
     this.popupTexts = this.add.group();
 
     this.scoreText = this.add.text(this.world.centerX, 16, '0 patients rescued', { font: "bold 24px Verdana", fill: "#FFFFFF", stroke: "#FF4136", strokeThickness: 5 });
     this.scoreText.anchor.setTo(0.5, 0.5);
-
 
     this.liveIcons = this.add.group();
     for (var l = 0; l < this.LIVES; l++) {
@@ -73,6 +91,8 @@ BasicGame.Game.prototype = {
         .loop()
         .start();
     }
+
+    this.addCar();
 
     this.overlay = this.add.sprite(this.world.centerX, this.world.centerY, 'red');
     this.overlay.anchor.setTo(0.5, 0.5);
@@ -121,14 +141,14 @@ BasicGame.Game.prototype = {
       ctx.beginPath();
       ctx.arc(patient.center.x, patient.center.y, 35, -Math.PI / 2 - 0.03, 0.03 -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
       ctx.lineWidth = 9;
-      ctx.strokeStyle = 'black';
+      ctx.strokeStyle = 'rgba(0, 0, 0, 1.0)';
       ctx.stroke();
 
       // arc
       ctx.beginPath();
       ctx.arc(patient.center.x, patient.center.y, 35, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2) * timePercentage, false);
       ctx.lineWidth = 7;
-      ctx.strokeStyle = 'rgb(' + Math.round(255 - 200 * timePercentage) + ', ' + Math.round(200 * timePercentage) + ', 0)';
+      ctx.strokeStyle = 'rgba(' + Math.round(255 - 200 * timePercentage) + ', ' + Math.round(200 * timePercentage) + ', 0, 1.0)';
       ctx.stroke();
     });
 
@@ -183,9 +203,11 @@ BasicGame.Game.prototype = {
   },
 
   addCar: function() {
-    var car = this.cars.create(this.world.centerX, this.world.centerY + 80, 'car');
+    var randomHospital = this.hospitals.getRandom();
+    var car = this.cars.create(randomHospital.x, randomHospital.y, 'car');
     car.anchor.setTo(0.5, 0.5);
     car.scale.setTo(0.8, 0.8);
+    //car.body.setSize(car.body.width + 20, car.body.height + 20, -10, -10); // x, y, offsetX, offsetY
     car.inputEnabled = true;
     car.input.enableDrag(false, true);
     car.input.setDragLock(false, false);
@@ -195,11 +217,13 @@ BasicGame.Game.prototype = {
     car.dragging = false;
     car.movePoints = [];
     car.patients = [];
+
+    this.popupText(car.x, car.y - 30, "Ambulance ready!", '#0074D9');
   },
 
   newPatient: function() {
     this.patientsSpawned++;
-    var randomBlock = this.blocks.getRandom();
+    var randomBlock = this.rnd.pick(this.appartmentBlocks);
     var distanceFromBlock = 25;
     var patientX = randomBlock.topLeft.x - distanceFromBlock;
     var patientY = randomBlock.topLeft.y - distanceFromBlock;
@@ -214,6 +238,7 @@ BasicGame.Game.prototype = {
 
     var patient = this.patients.create(patientX, patientY, 'patient');
     patient.anchor.setTo(0.5, 0.5);
+    patient.body.setSize(patient.body.width + 20, patient.body.height + 20, -10, -10); // x, y, offsetX, offsetY
 
     var minCountDown = Math.max(this.minCountDown, this.maxCountDown - this.patientsSpawned * 1000);
     patient.countDown = this.rnd.realInRange(minCountDown, this.maxCountDown);
@@ -233,20 +258,12 @@ BasicGame.Game.prototype = {
     var texts = ['Help!', '911!', 'Hurry!', 'Need assistance!', 'To the hospital!', 'Help me!', 'Send help!', 'I need help!'];
     this.popupText(patient.x, patient.y - 30, this.rnd.pick(texts), '#FF851B');
 
-    if (this.patientsSpawned % 20 === 0 && this.cars.countLiving() < 5) {
+    if (this.patientsSpawned === 10 || this.patientsSpawned === 40 || this.patientsSpawned === 80) {
       this.addCar();
     }
 
-    var timeToNextPatient = Math.max(this.minNextPatient, this.maxNextPatient - this.patientsSpawned * 100);
-    console.log('timeToNextPatient',timeToNextPatient);
+    var timeToNextPatient = Math.max(this.minNextPatient, this.maxNextPatient - this.patientsSpawned * 50);
     this.time.events.create(timeToNextPatient, false, 0, this.newPatient, this);
-
-    // NOTES:
-
-    -> two hospitals - one at each end
-    -> make ambulances easier to control
-    -> make the pick-up range on patients larger
-    -> quitting game does not work on ipad
   },
 
   quitGame: function() {
@@ -299,11 +316,6 @@ BasicGame.Game.prototype = {
       patient.destroy();
       car.patients.splice(0, 1);
     }
-
-    this.add.tween(hospital)
-      .to({ rotation: this.rnd.normal() * 3 }, 500, Phaser.Easing.Cubic.InOut)
-      .to({ rotation: 0 }, 500, Phaser.Easing.Cubic.InOut)
-      .start();
   },
 
   patientDies: function(patient) {

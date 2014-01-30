@@ -13,6 +13,7 @@ BasicGame.Preloader.prototype = {
     this.load.image('titlepage', 'assets/images/title.jpg');
     this.load.image('button', 'assets/images/button.png');
     this.load.image('map', 'assets/images/bigmap.jpg');
+    this.load.image('map2', 'assets/images/bigmap2.jpg');
     this.load.image('car', 'assets/images/ambulance.png');
     this.load.image('patient', 'assets/images/firstaid.png');
     this.load.image('hospital', 'assets/images/spinObj_02.png');
